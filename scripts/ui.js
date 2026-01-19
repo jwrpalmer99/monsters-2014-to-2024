@@ -340,6 +340,7 @@ class PreviewApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const backupMessage = (() => {
       if (backupMode === "duplicate") return "A duplicate backup actor will be created. The original will be updated.";
       if (backupMode === "journal") return "A Journal snapshot backup will be created. The original will be updated.";
+      if (backupMode === "compendium") return "A compendium snapshot backup will be created. The original will be updated.";
       return "No backup will be created. The original will be updated.";
     })();
     const replaceNote = replaceInScenes
