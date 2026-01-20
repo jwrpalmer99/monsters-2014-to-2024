@@ -1301,9 +1301,23 @@ export function snapshotFromData(actorData, rollData) {
 
   const traitsData = foundry.utils.getProperty(rollData, "traits") || foundry.utils.getProperty(actorData, "system.traits") || {};
   const formatTraitList = (trait) => {
-    const values = trait?.value ?? [];
-    if (!Array.isArray(values) || !values.length) return "-";
-    return values.map((value) => String(value)).join(", ");
+    if (!trait) return "-";
+    let values = trait.value ?? trait.values ?? [];
+    if (values instanceof Set) values = Array.from(values);
+    if (typeof values === "string") values = values ? [values] : [];
+    if (!Array.isArray(values) && values && typeof values === "object") {
+      const nested = values.values ?? values.value ?? [];
+      values = nested instanceof Set ? Array.from(nested) : nested;
+    }
+    if (!Array.isArray(values)) values = [];
+    const cleaned = values
+      .map((value) => value?.label ?? value?.name ?? value?.value ?? value)
+      .map((value) => String(value).trim())
+      .filter(Boolean);
+    const custom = String(trait.custom ?? "").trim();
+    if (custom) cleaned.push(custom);
+    if (!cleaned.length) return "-";
+    return cleaned.join(", ");
   };
 
   if (!attackBonuses.length) {
