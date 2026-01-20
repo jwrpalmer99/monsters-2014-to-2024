@@ -242,6 +242,10 @@ class PreviewApp extends HandlebarsApplicationMixin(ApplicationV2) {
     }
 
     table.addEventListener("click", (event) => {
+      if (event.target?.classList?.contains("m1424-header-link")) {
+        event.stopPropagation();
+        return;
+      }
       if (event.target?.classList?.contains("m1424-attack-save-toggle")) {
         event.stopPropagation();
         return;
@@ -306,6 +310,10 @@ class PreviewApp extends HandlebarsApplicationMixin(ApplicationV2) {
     }
 
     const modeByKey = new Map(comparison.results.map((result) => [result.key, result]));
+    const allRows = Array.from(table.querySelectorAll("tr[data-row]"));
+    const fullSrdReplace = allRows.length > 0
+      && allRows.every((row) => selectedByRow[row.dataset.row] === "srd")
+      && modeByKey.has("srd");
     const updates = {};
     const itemUpdates = [];
     const itemCreates = [];
@@ -335,6 +343,11 @@ class PreviewApp extends HandlebarsApplicationMixin(ApplicationV2) {
       }
       return Object.keys(filtered).length > 1 ? filtered : null;
     };
+    const getUpdateValue = (updateData, path) => {
+      if (!updateData) return undefined;
+      if (Object.prototype.hasOwnProperty.call(updateData, path)) return updateData[path];
+      return foundry.utils.getProperty(updateData, path);
+    };
     const getActivityEntries = (activities) => {
       if (!activities) return [];
       if (typeof activities.entries === "function") return Array.from(activities.entries());
@@ -352,6 +365,10 @@ class PreviewApp extends HandlebarsApplicationMixin(ApplicationV2) {
         updatedDesc = updatedDesc.replace(
           /\[\[\/save\s+([a-zA-Z]+)\s+\d+([^\]]*)\]\]/g,
           `[[/save $1 ${targetDc}$2]]`
+        );
+        updatedDesc = updatedDesc.replace(
+          /\[\[\/save\s+([^\]]*?)\bdc\s*=\s*\d+([^\]]*)\]\]/gi,
+          `[[/save $1dc=${targetDc}$2]]`
         );
         if (updatedDesc !== desc) {
           update["system.description.value"] = updatedDesc;
@@ -380,12 +397,30 @@ class PreviewApp extends HandlebarsApplicationMixin(ApplicationV2) {
       if (!item) return false;
       return String(item.name || "").toLowerCase().includes("multiattack");
     };
+    const getExistingMultiattackItem = () => {
+      for (const item of actor.items) {
+        const name = String(item.name || "").toLowerCase();
+        if (name.includes("multiattack")) return item;
+        const identifier = String(foundry.utils.getProperty(item, "system.identifier") || "").toLowerCase();
+        if (identifier && identifier.includes("multiattack")) return item;
+        const desc = String(foundry.utils.getProperty(item, "system.description.value") || "").toLowerCase();
+        if (desc.includes("multiattack")) return item;
+      }
+      return null;
+    };
 
     const STAT_PATHS = {
       hp: ["system.attributes.hp.max", "system.attributes.hp.value"],
       ac: ["system.attributes.ac.value"],
       prof: ["system.attributes.prof"],
       init: ["system.attributes.init.bonus", "system.attributes.init.ability", "system.attributes.init.mod"]
+    };
+    const ROW_UPDATE_PATHS = {
+      senses: ["system.attributes.senses"],
+      resistances: ["system.traits.dr"],
+      immunities: ["system.traits.di"],
+      vulnerabilities: ["system.traits.dv"],
+      conditionImmunities: ["system.traits.ci"]
     };
 
     for (const [rowKey, modeKey] of Object.entries(selectedByRow)) {
@@ -402,10 +437,23 @@ class PreviewApp extends HandlebarsApplicationMixin(ApplicationV2) {
         } else {
           const allowed = new Set(STAT_PATHS[rowKey]);
           const filtered = {};
-          for (const [path, value] of Object.entries(plan.updates || {})) {
-            if (allowed.has(path)) filtered[path] = value;
+          for (const path of allowed) {
+            const value = getUpdateValue(plan.updates, path);
+            if (value !== undefined) filtered[path] = value;
           }
           mergeUpdates(updates, filtered);
+          if (rowKey === "hp" && !Object.keys(filtered).length && result?.after?.hp?.max) {
+            updates["system.attributes.hp.max"] = result.after.hp.max;
+            updates["system.attributes.hp.value"] = result.after.hp.value ?? result.after.hp.max;
+          }
+        }
+        continue;
+      }
+
+      if (ROW_UPDATE_PATHS[rowKey]) {
+        for (const path of ROW_UPDATE_PATHS[rowKey]) {
+          const value = getUpdateValue(plan.updates, path);
+          if (value !== undefined) updates[path] = value;
         }
         continue;
       }
@@ -488,15 +536,32 @@ class PreviewApp extends HandlebarsApplicationMixin(ApplicationV2) {
       }
 
       if (rowKey === "multiattack") {
+        const existingMultiattack = getExistingMultiattackItem();
         for (const update of plan.itemUpdates || []) {
           if (includeMultiattack(update)) itemUpdates.push(update);
         }
-        for (const created of plan.itemCreates || []) {
-          if (String(created.name || "").toLowerCase().includes("multiattack")) {
-            itemCreates.push(created);
+        const createdMultiattack = (plan.itemCreates || []).find((created) =>
+          String(created?.name || "").toLowerCase().includes("multiattack")
+        );
+        if (createdMultiattack) {
+          if (existingMultiattack) {
+            const desc = foundry.utils.getProperty(createdMultiattack, "system.description.value");
+            if (typeof desc === "string" && desc.length) {
+              itemUpdates.push({
+                _id: existingMultiattack.id,
+                "system.description.value": desc
+              });
+            }
+          } else {
+            itemCreates.push(createdMultiattack);
           }
         }
       }
+    }
+
+    const cleanedName = String(actor.name || "").replace(/\s*\(legacy\)\s*$/i, "").trim();
+    if (cleanedName && cleanedName !== actor.name) {
+      updates.name = cleanedName;
     }
 
     if (!Object.keys(updates).length && !itemUpdates.length && !itemCreates.length) {
@@ -536,6 +601,41 @@ class PreviewApp extends HandlebarsApplicationMixin(ApplicationV2) {
     if (!confirmed) return;
 
     await createBackup(actor, backupMode);
+    if (fullSrdReplace) {
+      const srdResult = modeByKey.get("srd");
+      const updateData = foundry.utils.duplicate(srdResult?.plan?.updates ?? {});
+      const items = Array.isArray(srdResult?.plan?.itemCreates) ? srdResult.plan.itemCreates : [];
+      if (updateData.items) delete updateData.items;
+      const cleanedName = String(actor.name || "").replace(/\s*\(legacy\)\s*$/i, "").trim();
+      if (cleanedName && cleanedName !== actor.name) {
+        updateData.name = cleanedName;
+      }
+      await actor.update(updateData, { diff: false, recursive: false });
+      const existingIds = actor.items.map((item) => item.id);
+      if (existingIds.length) {
+        await actor.deleteEmbeddedDocuments("Item", existingIds);
+      }
+      if (items.length) {
+        await actor.createEmbeddedDocuments("Item", items);
+      }
+      await actor.update(
+        buildInitiativeUpdate(
+          actor.toObject(),
+          foundry.utils.getProperty(actor, "system.attributes.prof"),
+          parseCR(foundry.utils.getProperty(actor, "system.details.cr"))
+        )
+      );
+      await actor.update({
+        "flags.monsters-2014-to-2024.converted2024": true,
+        "flags.monsters-2014-to-2024.convertedAt": new Date().toISOString(),
+        "flags.monsters-2014-to-2024.conversionMode": "srd"
+      });
+      if (replaceInScenes) {
+        await this.replaceInScenes(actor);
+      }
+      ui.notifications.info(`${actor.name} updated from selected preview values.`);
+      return;
+    }
     if (Object.keys(updates).length) {
       await actor.update(updates);
     }

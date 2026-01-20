@@ -43,7 +43,9 @@ export function buildIntelligentPlan(actor, options = {}) {
 
   Object.assign(updates, setProf(actorData, targetProf));
   Object.assign(updates, bumpAc(actorData, getAcBoost(cr)));
-  Object.assign(updates, rebuildHp(actorData, getHpMultiplier(cr, role)));
+  const applyRoleMultipliers = game.settings.get("monsters-2014-to-2024", "applyRoleMultipliers");
+  const hpRole = applyRoleMultipliers ? role : "balanced";
+  Object.assign(updates, rebuildHp(actorData, getHpMultiplier(cr, hpRole)));
   Object.assign(updates, normalizeSkills(actorData, targetProf));
   Object.assign(updates, normalizeSenses(actorData));
   Object.assign(updates, buildInitiativeUpdate(actorData, targetProf, cr));
@@ -57,7 +59,8 @@ export function buildIntelligentPlan(actor, options = {}) {
   const floorSaves = game.settings.get("monsters-2014-to-2024", "saveDcFloor");
   const currentProf = foundry.utils.getProperty(actorData, "system.attributes.prof") ?? targetProf;
   const profDelta = Math.max(0, targetProf - currentProf);
-  const damageDelta = Math.round(profDelta * getRoleDamageMultiplier(role));
+  const damageRole = applyRoleMultipliers ? role : "balanced";
+  const damageDelta = Math.round(profDelta * getRoleDamageMultiplier(damageRole));
 
   for (const item of actor.items) {
     const actionType = foundry.utils.getProperty(item, "system.actionType");

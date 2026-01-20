@@ -163,6 +163,14 @@ function registerSettings() {
     type: Boolean,
     default: true
   });
+  game.settings.register(MODULE_ID, "applyRoleMultipliers", {
+    name: "Apply Role Multipliers",
+    hint: "If enabled, apply role-based HP and damage multipliers during inbuilt scaling.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false
+  });
 }
 
 function addActorContextOptions(sidebar, menuItems) {

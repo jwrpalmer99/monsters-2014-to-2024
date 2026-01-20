@@ -45,6 +45,22 @@
   cursor: pointer;
 }
 
+.m1424-header-label {
+  display: inline-block;
+}
+
+.m1424-header-link {
+  margin-left: 6px;
+  font-size: 12px;
+  text-decoration: none;
+  opacity: 0.8;
+}
+
+.m1424-header-link:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
 .m1424-picked {
   background-color: rgba(94, 195, 94, 0.2);
   box-shadow: inset 0 0 0 2px rgba(94, 195, 94, 0.6);

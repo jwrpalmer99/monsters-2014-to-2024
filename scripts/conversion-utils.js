@@ -651,7 +651,9 @@ export function setAttackBonus(updateData, item, bonus) {
 }
 
 export function getSaveDc(item) {
-  const dc = foundry.utils.getProperty(item, "system.save.dc");
+  let dc = foundry.utils.getProperty(item, "system.save.dc");
+  if (dc === undefined || dc === null || dc === "") dc = foundry.utils.getProperty(item, "save.dc");
+  if (!Number.isFinite(dc)) dc = foundry.utils.getProperty(item, "save.dc.formula");
   if (dc === undefined || dc === null || dc === "") return null;
   return Number(dc);
 }
@@ -659,6 +661,9 @@ export function getSaveDc(item) {
 export function setSaveDc(updateData, item, dc) {
   if (foundry.utils.hasProperty(item, "system.save.dc")) {
     updateData["system.save.dc"] = dc;
+  }
+  if (foundry.utils.hasProperty(item, "save.dc.formula")) {
+    updateData["save.dc.formula"] = String(dc);
   }
 }
 
@@ -1279,6 +1284,17 @@ function parseMultiattackCount(text) {
     eleven: 11,
     twelve: 12
   };
+  const sumMatches = Array.from(
+    normalized.matchAll(/\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+[^.]*?\battacks?\b/g)
+  );
+  if (sumMatches.length > 1) {
+    const total = sumMatches.reduce((sum, match) => {
+      const raw = match[1];
+      const value = Number.isNaN(Number(raw)) ? (wordMap[raw] ?? 0) : Number(raw);
+      return sum + value;
+    }, 0);
+    if (total > 0) return total;
+  }
   const matchTimes = normalized.match(/\b(\d+)\s+times?\b/);
   if (matchTimes) return Number(matchTimes[1]);
   const matchTimesWord = normalized.match(/\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+times?\b/);
@@ -1301,12 +1317,32 @@ function parseMultiattackCount(text) {
 function resolveItemLinks(text, items) {
   if (!text) return text;
   const idToName = new Map((items || []).map((item) => [item._id ?? item.id, item.name]));
+  const identifierToName = new Map((items || []).map((item) => {
+    const identifier = String(foundry.utils.getProperty(item, "system.identifier") || "").trim();
+    return [identifier, item.name];
+  }).filter(([identifier]) => identifier));
+  const tokenToName = new Map();
+  for (const [key, value] of idToName) {
+    if (key) tokenToName.set(String(key), value);
+  }
+  for (const [key, value] of identifierToName) {
+    if (key) tokenToName.set(String(key), value);
+  }
   let resolved = text;
   resolved = resolved.replace(/\[\[\s*lookup\s+@name\s+lowercase\s*\]\]/gi, "creature");
   resolved = resolved.replace(/\[\[\s*lookup\s+@name\s*\]\]/gi, "creature");
   resolved = resolved.replace(/\[\[\s*lookup\s+@item\.name\s*\]\]/gi, "an attack");
+  resolved = resolved.replace(/\[\[\/item\s+([^\]|]+)(?:\|([^\]]+))?\]\]/gi, (match, name, label) => {
+    const display = String(label || name || "").trim();
+    return display || match;
+  });
   resolved = resolved.replace(/\[\[\/item\s*\.?([a-zA-Z0-9]+)\]\]/g, (match, id) => {
-    const name = idToName.get(id);
+    const normalized = String(id || "").replace(/^\./, "");
+    const name = tokenToName.get(normalized) || tokenToName.get(id);
+    return name ? name : match;
+  });
+  resolved = resolved.replace(/\.([a-zA-Z0-9]{6,})/g, (match, token) => {
+    const name = tokenToName.get(token);
     return name ? name : match;
   });
   resolved = resolved.replace(/\bthe\s+the\s+/gi, "the ");

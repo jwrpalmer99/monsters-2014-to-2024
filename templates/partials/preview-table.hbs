@@ -5,10 +5,17 @@
       <th data-mode="original">Original</th>
       {{#each headerModes}}
         <th data-mode="{{key}}">
+          <span class="m1424-header-label">{{label}}</span>
           {{#if link}}
-            <a href="{{link}}" target="_blank" rel="noopener noreferrer">{{label}}</a>
-          {{else}}
-            {{label}}
+            <a
+              class="m1424-header-link"
+              href="{{link}}"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Open reference"
+            >
+              ↗
+            </a>
           {{/if}}
         </th>
       {{/each}}
