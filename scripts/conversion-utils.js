@@ -768,21 +768,25 @@ export function stripSaveFromAttackActivities(item) {
           ""
         );
       }
+      const timing =
+        "(?:at\\s+the\\s+(?:start|end)\\s+of\\s+(?:each\\s+of\\s+)?its\\s+turns?|at\\s+the\\s+(?:start|end)\\s+of\\s+its\\s+turn)";
+      const withTiming = (pattern) => new RegExp(`${pattern}[^.]*${timing}`, "gi");
+      const replacement = `make a ${protectedToken || protectedText}`;
       updated = updated.replace(
-        /\brepeat\s+(?:the\s+)?saving\s+throw\b/gi,
-        `make a ${protectedToken || protectedText}`
+        withTiming("\\brepeat\\s+(?:the\\s+)?saving\\s+throw\\b"),
+        (match) => match.replace(/\brepeat\s+(?:the\s+)?saving\s+throw\b/i, replacement)
       );
       updated = updated.replace(
-        /\brepeat\s+(?:the\s+)?save\b/gi,
-        `make a ${protectedToken || protectedText}`
+        withTiming("\\brepeat\\s+(?:the\\s+)?save\\b"),
+        (match) => match.replace(/\brepeat\s+(?:the\s+)?save\b/i, replacement)
       );
       updated = updated.replace(
-        /\bmake\s+(?:a\s+)?saving\s+throw\b/gi,
-        `make a ${protectedToken || protectedText}`
+        withTiming("\\bmake\\s+(?:a\\s+)?saving\\s+throw\\b"),
+        (match) => match.replace(/\bmake\s+(?:a\s+)?saving\s+throw\b/i, replacement)
       );
       updated = updated.replace(
-        /\bmake\s+(?:a\s+)?save\b/gi,
-        `make a ${protectedToken || protectedText}`
+        withTiming("\\bmake\\s+(?:a\\s+)?save\\b"),
+        (match) => match.replace(/\bmake\s+(?:a\s+)?save\b/i, replacement)
       );
       updated = updated.replace(
         new RegExp(`DC\\s*${saveInfo.dc}\\s*${abilityLabel}\\s+saving\\s+throw`, "gi"),
@@ -792,6 +796,14 @@ export function stripSaveFromAttackActivities(item) {
     updated = updated.replace(
       /\bmust\s+succeed\s+on\s+a\s+\[\[\/save[^\]]+\]\]\s+or\s+become\b/gi,
       "becomes"
+    );
+    updated = updated.replace(
+      /\bmust\s+succeed\s+on\s+a\s+\[\[\/save[^\]]+\]\]\s+saving\s+throw\s+becomes\b/gi,
+      "becomes"
+    );
+    updated = updated.replace(
+      /\bmust\s+succeed\s+on\s+a\s+\[\[\/save[^\]]+\]\]\s+saving\s+throw\b/gi,
+      ""
     );
     updated = updated.replace(
       /\bmust\s+succeed\s+on\s+a\s+\[\[\/save[^\]]+\]\]\s+or\b/gi,
@@ -806,6 +818,7 @@ export function stripSaveFromAttackActivities(item) {
       "takes"
     );
     updated = updated.replace(/\bmust\s+succeed\s+on\s+a\s+saving\s+throw\b/gi, "");
+    updated = updated.replace(/\b(?:repeat|make)\s+(?:the\s+)?(?:saving\s+throw|save)\b/gi, "");
     updated = updated.replace(/\bmust\s+succeed\s+on\s+a\s+becomes\b/gi, "becomes");
     updated = updated.replace(/\bor\s+become\b/gi, "becomes");
     updated = updated.replace(/\bsaving\s+throw\s+saving\s+throw\b/gi, "saving throw");
@@ -813,6 +826,7 @@ export function stripSaveFromAttackActivities(item) {
     if (protectedToken && protectedText) {
       updated = updated.replace(new RegExp(protectedToken, "g"), protectedText);
     }
+    updated = updated.replace(/must succeed.*?\[\[\/save.*?\]\].*?saving throw/gi, "");
     return updated;
   };
 
