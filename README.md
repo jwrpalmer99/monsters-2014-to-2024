@@ -1,20 +1,21 @@
 # Monsters 2014 to 2024
 
-Foundry VTT v13 module for D&D 5e (5.2.4) that converts 2014 NPC stat blocks to 2024-style scaling.
+Foundry VTT v13 module for D&D 5e (5.2.4) that scales 2014 monsters to 2024 levels. The module provides several methods of scaling and backup methods for original actors.
 
-<img width="982" height="631" alt="preview" src="https://github.com/user-attachments/assets/7b5f4ffd-3029-4dd1-a1c4-090b072e1aa5" />
+<img width="982" height="598" alt="preview" src="https://github.com/user-attachments/assets/6708de58-f031-492b-9969-0d636d533e13" />
 
 ## Usage
 
 1. Open preview window
    
-    - Actor Directory: right-click an NPC, choose "Convert 2014 → 2024". (NB: you can select this option in compendiums but will Update will do nothing)
+    - Actor Directory: right-click an NPC, choose "Convert 2014 → 2024". (NB: you can select this option in compendiums but Update will do nothing)
     - NPC Sheet: choose "Convert 2014 → 2024" in the window menu.
 
 2. Select desired changes
    
-    - You will be presented with a preview showing the changes suggested by several methods (and possibly additional suggestions) - you can click on a column header or on a cell in the table to take that a the new value for the updated monster, cells which are currently set to be updated will have a green border.
-    - If there are abilities which will have Saves removed (if you have that setting enabled) you can selectively disable/enable them - if there is a red X on the ability, the Save will be removed from the updated monster.
+    - You will be presented with a preview showing the changes (dark green = increases, dark red = decreases) suggested by several methods (and possibly additional suggestions)
+    - Click on a column header or on a cell in the table to set that as the new value for the updated monster; cells which are currently set to be updated will have a green border.
+    - If there are abilities which will have Saves removed (if you have that setting enabled) you can selectively disable/enable them - if there is a red X on the ability, the Save will be removed from the updated monster. If there are follow up saves (at start/end of turn) they should still be mentioned in the description.
     - Make a mental note of any suggestions!
   
   (If you don't like the suggested values of the conversion modes, just use them as a guide to make your own manual changes)
@@ -25,7 +26,9 @@ Foundry VTT v13 module for D&D 5e (5.2.4) that converts 2014 NPC stat blocks to 
     - Update and Replace in Scenes: as above but will additionally update any matching unlinked tokens in scenes
 
 ## Settings
-- Many options are configurable in the module settings window
+- Many options are configurable in the module settings window - this includes setting the location for compendium/journal backups
+  
+<img width="437" height="820" alt="settings" src="https://github.com/user-attachments/assets/e0ad568e-3ae9-4680-8573-e86646bfadca" />
 
 ## Conversion Modes
 
