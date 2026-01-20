@@ -6,13 +6,23 @@ Foundry VTT v13 module for D&D 5e (5.2.4) that converts 2014 NPC stat blocks to 
 
 ## Usage
 
-- Actor Directory: right-click an NPC, choose "Convert 2014 → 2024". (NB: you can select this option in compendiums but will Update will do nothing)
-- NPC Sheet: choose "Convert 2014 → 2024" in the window menu.
+1. Open preview window
+   
+    - Actor Directory: right-click an NPC, choose "Convert 2014 → 2024". (NB: you can select this option in compendiums but will Update will do nothing)
+    - NPC Sheet: choose "Convert 2014 → 2024" in the window menu.
 
-- You will be presented with a preview showing the changes suggested by several methods (and possibly additional suggestions) - you can 
+2. Select desired changes
+   
+    - You will be presented with a preview showing the changes suggested by several methods (and possibly additional suggestions) - you can click on a column header or on a cell in the table to take that a the new value for the updated monster, cells which are currently set to be updated will have a green border.
+    - If there are abilities which will have Saves removed (if you have that setting enabled) you can selectively disable/enable them - if there is a red X on the ability, the Save will be removed from the updated monster.
+    - Make a mental note of any suggestions!
   
-- Update Button: will (optionally) backup the existing actor to compendium/journal/actor (see settings) and update the existing npc
-- Update and Replace in Scenes: as above but will additionally update any matching unlinked tokens in scenes
+  (If you don't like the suggested values of the conversion modes, just use them as a guide to make your own manual changes)
+
+3. Update NPC
+     
+    - Update Button: will (optionally) backup the existing actor to compendium/journal/actor (see settings) and update the existing npc
+    - Update and Replace in Scenes: as above but will additionally update any matching unlinked tokens in scenes
 
 ## Settings
 - Many options are configurable in the module settings window
