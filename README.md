@@ -2,15 +2,24 @@
 
 Foundry VTT v13 module for D&D 5e (5.2.4) that converts 2014 NPC stat blocks to 2024-style scaling.
 
+<img width="982" height="631" alt="preview" src="https://github.com/user-attachments/assets/7b5f4ffd-3029-4dd1-a1c4-090b072e1aa5" />
+
 ## Usage
 
-- Actor Directory: right-click an NPC, choose "Convert 2014 → 2024".
-- NPC Sheet: click the arrow-up icon in the window header.
-- API: `game.modules.get("monsters-2014-to-2024").api.convertActorTo2024(actor, options)`
+- Actor Directory: right-click an NPC, choose "Convert 2014 → 2024". (NB: you can select this option in compendiums but will Update will do nothing)
+- NPC Sheet: choose "Convert 2014 → 2024" in the window menu.
+
+- You will be presented with a preview showing the changes suggested by several methods (and possibly additional suggestions) - you can 
+  
+- Update Button: will (optionally) backup the existing actor to compendium/journal/actor (see settings) and update the existing npc
+- Update and Replace in Scenes: as above but will additionally update any matching unlinked tokens in scenes
+
+## Settings
+- Many options are configurable in the module settings window
 
 ## Conversion Modes
 
-- Inbuilt Scaling: normalizes PB/AC/HP/attack bonuses/save DCs, skills, and senses based on CR and detected role.
+- Inbuilt Scaling: normalizes PB/AC/HP/attack bonuses/save DCs, skills, and senses based on CR and detected role. Can be configured by user.
 - Match SRD 5.2: replaces the actor with a matching SRD creature from a compendium pack and preserves customizations.
 - Blog of Holding: applies the CR table targets for AC/HP/Attack/Damage/DC/PB with a primary-attack damage adjustment.
 - A5E Monster Design: applies Level Up monster table targets for AC/HP/PB/attacks/DPR with easy or hard DC targets.
@@ -82,8 +91,9 @@ game.modules.get("monsters-2014-to-2024").api.convertActorTo2024(actor, {
 
 ## Attack + Save Cleanup
 
-- Option: **Remove Save on Attack Abilities** (default: on)
+- Option: **Remove Save on Attack Abilities** (default: on).
 - When enabled, if an ability uses an attack roll and a saving throw, the save is removed and descriptions are cleaned.
+- In the preview window this functionality can be disabled/enabled for each ability.
 
 ## What It Adjusts
 
@@ -94,5 +104,3 @@ game.modules.get("monsters-2014-to-2024").api.convertActorTo2024(actor, {
 - Save DC (floors to CR-based 2024 targets).
 - Skill bonuses (floors to ability mod + proficiency).
 - Damage bonuses (adds delta based on proficiency increase).
-
-All scaling is configurable in module settings.
