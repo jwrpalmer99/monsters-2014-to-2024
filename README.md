@@ -13,7 +13,8 @@ Foundry VTT v13 module for D&D 5e (5.2.4) that scales 2014 monsters to 2024 leve
 
 2. Select desired changes
    
-    - You will be presented with a preview showing the changes (dark green = increases, dark red = decreases) suggested by several methods (and possibly additional suggestions) - you can click on a column header or on a cell in the table to set that as the new value for the updated monster; cells which are currently set to be updated will have a green border.
+    - You will be presented with a preview showing the changes (dark green = increases, dark red = decreases) suggested by several methods (and possibly additional suggestions)
+    - Click on a column header or on a cell in the table to set that as the new value for the updated monster; cells which are currently set to be updated will have a green border.
     - If there are abilities which will have Saves removed (if you have that setting enabled) you can selectively disable/enable them - if there is a red X on the ability, the Save will be removed from the updated monster. If there are follow up saves (at start/end of turn) they should still be mentioned in the description.
     - Make a mental note of any suggestions!
   
