@@ -117,3 +117,4 @@ game.modules.get("monsters-2014-to-2024").api.convertActorTo2024(actor, {
 - Save DC (floors to CR-based 2024 targets).
 - Skill bonuses (floors to ability mod + proficiency).
 - Damage bonuses (adds delta based on proficiency increase).
+- NB: (Condition) Immunities, Resistances, Vulnerabilities are shown for info only
