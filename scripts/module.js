@@ -34,6 +34,22 @@ function registerSettings() {
     type: String,
     default: ""
   });
+  game.settings.register(MODULE_ID, "backupNameSuffixEnabled", {
+    name: "Backup Name Suffix Enabled",
+    hint: "If enabled, append a suffix to backup actor names.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true
+  });
+  game.settings.register(MODULE_ID, "backupNameSuffix", {
+    name: "Backup Name Suffix",
+    hint: "Suffix to append to backup actor names when enabled.",
+    scope: "world",
+    config: true,
+    type: String,
+    default: " (2014 backup)"
+  });
   game.settings.register(MODULE_ID, "backupJournalId", {
     name: "Backup Journal ID",
     hint: "Journal entry id or UUID to store snapshots in (leave blank to create a new entry).",

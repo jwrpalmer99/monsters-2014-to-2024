@@ -695,7 +695,9 @@ async function createBackup(actor, backupMode) {
   if (!backupMode || backupMode === "none") return;
   const actorData = actor.toObject();
   if (backupMode === "duplicate" && !actor.pack) {
-    const name = `${actor.name} (2014 backup)`;
+    const suffixEnabled = game.settings.get(MODULE_ID, "backupNameSuffixEnabled");
+    const suffix = String(game.settings.get(MODULE_ID, "backupNameSuffix") ?? "");
+    const name = suffixEnabled && suffix ? `${actor.name}${suffix}` : `${actor.name}`;
     await actor.collection.documentClass.create({ ...actorData, name });
     return;
   }
@@ -813,6 +815,17 @@ export async function openActorPreviewComparison(actor) {
       roleLines.push(`Detected Role: ${preview.after.detectedRole}`);
     }
   }
+  const sourceText = (() => {
+    const sourceData = foundry.utils.getProperty(actor, "system.source");
+    if (!sourceData || typeof sourceData !== "object") return "";
+    const book = String(sourceData.book ?? sourceData.value ?? "").trim();
+    const rules = String(sourceData.rules ?? "").trim();
+    const label = String(sourceData.label ?? "").trim();
+    if (book && rules) return `${book}, Rules: ${rules}`;
+    if (label) return `${label}`;
+    if (book) return `${book}`;
+    return "";
+  })();
 
   const isNumber = (value) => typeof value === "number" && !Number.isNaN(value);
 
@@ -858,6 +871,7 @@ export async function openActorPreviewComparison(actor) {
 
   const previewData = {
     roleText: roleLines.length ? roleLines.join(" ") : "",
+    sourceText,
     suggestionsHtml: buildSuggestionsHtml(actor, base, crValue),
     headerModes: results.map((result) => ({ key: result.key, label: result.mode })),
     rows: rows.map((row) => {

@@ -1,6 +1,11 @@
 <div class="m1424-preview-body">
   {{#if roleText}}
-    <p class="m1424-role">{{roleText}}</p>
+    <p class="m1424-role">
+      {{roleText}}
+      {{#if sourceText}} | Source: {{sourceText}}{{/if}}
+    </p>
+  {{else if sourceText}}
+    <p class="m1424-role">Source: {{sourceText}}</p>
   {{/if}}
   <div class="m1424-compare-scroll">
     {{> "modules/monsters-2014-to-2024/templates/partials/preview-table.hbs"}}
