@@ -25,9 +25,9 @@
 }
 
 .m1424-compare-table {
-  width: 100%;
+  width: max-content;
   border-collapse: collapse;
-  table-layout: fixed;
+  table-layout: auto;
 }
 
 .m1424-compare-table th,
@@ -37,6 +37,7 @@
   vertical-align: top;
   white-space: normal;
   text-align: center;
+  max-width: 180px;
 }
 
 .m1424-compare-table th[data-mode],
@@ -70,18 +71,19 @@
   overflow-wrap: anywhere;
 }
 
-.m1424-compare-table {
-  display: block;
-  overflow-x: auto;
-}
 
 .m1424-preview {
   max-width: 95vw;
 }
 
 .m1424-preview-body {
+  max-height: calc(100vh - 160px);
   overflow: auto;
-  max-height: calc(100vh - 200px);
+}
+
+.m1424-compare-scroll {
+  max-height: none;
+  overflow: visible;
 }
 
 .m1424-role {
@@ -109,6 +111,28 @@
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.m1424-suggestions {
+  margin-top: 12px;
+  padding: 8px 10px;
+  border: 1px solid #3b3b3b;
+  border-radius: 6px;
+  background: rgba(20, 20, 20, 0.5);
+}
+
+.m1424-suggestions-title {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.m1424-suggestions-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.m1424-suggestions-list li {
+  margin: 4px 0;
 }
 
 .m1424-attack-save-list {

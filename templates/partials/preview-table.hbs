@@ -1,0 +1,26 @@
+<table class="m1424-compare-table">
+  <thead>
+    <tr>
+      <th>Stat</th>
+      <th data-mode="original">Original</th>
+      {{#each headerModes}}
+        <th data-mode="{{key}}">{{label}}</th>
+      {{/each}}
+    </tr>
+  </thead>
+  <tbody>
+    {{#each rows}}
+      <tr data-row="{{key}}">
+        <td class="m1424-compare-stat">{{label}}</td>
+        <td class="m1424-compare-cell" data-row="{{key}}" data-mode="original">
+          {{{formatPreviewCell key base.value}}}
+        </td>
+        {{#each cells}}
+          <td class="{{className}}" data-row="{{../key}}" data-mode="{{modeKey}}">
+            {{{formatPreviewCell ../key value}}}
+          </td>
+        {{/each}}
+      </tr>
+    {{/each}}
+  </tbody>
+</table>

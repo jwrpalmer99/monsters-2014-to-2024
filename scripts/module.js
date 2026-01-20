@@ -1,5 +1,5 @@
 import { convertActorTo2024, previewActorConversion } from "./conversion.js";
-import { openActorPreviewComparison } from "./ui.js";
+import { openActorPreviewComparison, registerPreviewHandlebarsHelpers } from "./ui.js";
 
 const MODULE_ID = "monsters-2014-to-2024";
 
@@ -218,6 +218,12 @@ function addActorSheetHeaderButton() {
 
 Hooks.once("init", () => {
   registerSettings();
+  registerPreviewHandlebarsHelpers();
+  if (globalThis.loadTemplates) {
+    globalThis.loadTemplates([
+      "modules/monsters-2014-to-2024/templates/partials/preview-table.hbs"
+    ]);
+  }
 
   game.modules.get(MODULE_ID).api = {
     convertActorTo2024,

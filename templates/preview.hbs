@@ -1,3 +1,17 @@
 <div class="m1424-preview-body">
-  {{{content}}}
+  {{#if roleText}}
+    <p class="m1424-role">{{roleText}}</p>
+  {{/if}}
+  <div class="m1424-compare-scroll">
+    {{> "modules/monsters-2014-to-2024/templates/partials/preview-table.hbs"}}
+  </div>
+  {{#if suggestionsHtml}}
+    <div class="m1424-suggestions">
+      {{{suggestionsHtml}}}
+    </div>
+  {{/if}}
+  <div class="m1424-compare-actions">
+    <button type="button" class="m1424-update-selected">Update Monster</button>
+    <button type="button" class="m1424-update-selected-replace">Update and Replace in Scenes</button>
+  </div>
 </div>

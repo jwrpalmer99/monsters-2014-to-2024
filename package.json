@@ -1,0 +1,24 @@
+{
+  "name": "monsters-2014-to-2024",
+  "version": "1.0.0",
+  "description": "Foundry VTT v13 module for D&D 5e (5.2.4) that converts 2014 NPC stat blocks to 2024-style scaling.",
+  "main": "index.js",
+  "scripts": {
+    "createSymlinks": "node ./tools/create-symlinks.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jwrpalmer99/monsters-2014-to-2024.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/jwrpalmer99/monsters-2014-to-2024/issues"
+  },
+  "homepage": "https://github.com/jwrpalmer99/monsters-2014-to-2024#readme",
+  "dependencies": {
+    "js-yaml": "^4.1.1"
+  }
+}

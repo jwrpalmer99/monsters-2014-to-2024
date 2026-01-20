@@ -1,8 +1,184 @@
 import { convertActorTo2024, previewActorConversion } from "./conversion.js";
-import { buildInitiativeUpdate, escapeHtml, snapshotFromData, stripSaveFromAttackActivities } from "./conversion-utils.js";
+import { buildInitiativeUpdate, escapeHtml, getExpectedAttacksByCR, isLegendary, parseCR, snapshotFromData, stripSaveFromAttackActivities } from "./conversion-utils.js";
 
 const MODULE_ID = "monsters-2014-to-2024";
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
+
+function formatRange(summary) {
+  if (!summary) return "-";
+  return summary.min === summary.max ? `${summary.min}` : `${summary.min}-${summary.max}`;
+}
+
+function formatSaves(saves) {
+  if (!saves?.length) return "-";
+  return saves.map((s) => `${s.key} ${s.value}`).join(", ");
+}
+
+function formatValue(value) {
+  if (value === null || value === undefined || value === "") return "-";
+  if (Array.isArray(value)) return value.join(", ");
+  if (typeof value === "object") {
+    if ("value" in value) return value.value;
+    return JSON.stringify(value);
+  }
+  return value;
+}
+
+function buildAttackSaveHtml(items) {
+  if (!Array.isArray(items) || !items.length) return "-";
+  return `
+    <div class="m1424-attack-save-list">
+      ${items.map((entry) => `
+        <label class="m1424-attack-save-option">
+          <input class="m1424-attack-save-toggle" type="checkbox" data-item-id="${entry.id}" checked />
+          <span class="m1424-attack-save-name">${escapeHtml(entry.name)}</span>
+        </label>
+      `).join("")}
+    </div>
+  `;
+}
+
+function buildSuggestionsHtml(actor, snapshot, crValue) {
+  const suggestions = [];
+  const details = actor?.system?.details ?? {};
+  const typeValue = String(details?.type?.value ?? details?.type ?? "").toLowerCase();
+  const subtypeValue = String(details?.type?.subtype ?? "").toLowerCase();
+  const isDragon = typeValue.includes("dragon") || subtypeValue.includes("dragon");
+  const legendary = isLegendary(actor);
+  const crLabel = Number.isFinite(crValue) && crValue > 0 ? `CR ${crValue}` : "this CR";
+  const expectedHp = Number.isFinite(crValue) && crValue > 0 ? getExpectedHpByCr(crValue) : null;
+  const actualHp = Number(snapshot?.hp?.max);
+
+  if (Number.isFinite(actualHp) && Number.isFinite(expectedHp)) {
+    if (actualHp > expectedHp) {
+      suggestions.push(
+        `The original hit points are above the (2014) ${crLabel} average (~${expectedHp}) - consider lowering its damage to keep the overall threat balanced.`
+      );
+    } else if (actualHp < expectedHp) {
+      suggestions.push(
+        `The original hit points are below the (2014) ${crLabel} average (~${expectedHp}) - consider boosting its damage to keep the overall threat balanced.`
+      );
+    } 
+  }
+
+  const expectedAttacks = Number.isFinite(crValue) && crValue > 0 ? getExpectedAttacksByCR(crValue) : null;
+  const actionCount = Number(snapshot?.actions ?? 0);
+  const multiattackCount = Number(snapshot?.multiattackCount ?? 0);
+  if (Number.isFinite(expectedAttacks) && expectedAttacks >= 2) {
+    if (multiattackCount < expectedAttacks && actionCount <= expectedAttacks) {
+      suggestions.push(
+        `Action economy looks light for ${crLabel} - consider adding multiattack or an extra bonus action/reaction to keep up with expected pressure.`
+      );
+    }
+  }
+
+  const saveSummary = snapshot?.save;
+  if (saveSummary?.count >= 2 && Number.isFinite(saveSummary.min) && Number.isFinite(saveSummary.max)) {
+    const spread = saveSummary.max - saveSummary.min;
+    if (spread >= 3) {
+      suggestions.push(
+        `Save DCs vary by ${spread}; consider tightening the spread so saves feel consistent across the kit.`
+      );
+    }
+  }
+
+  if (legendary || isDragon) {
+    const tag = legendary && isDragon ? "Legendary dragons" : legendary ? "Legendary creatures" : "Dragons";
+    if (Number.isFinite(crValue) && crValue >= 13) {
+      suggestions.push(
+        `${tag} at ${crLabel} should feel more explosive - consider boosting damage by 45% and lowering hp by 20% to keep the pacing sharp while maintaining the threat.`
+      );
+    } else {
+      suggestions.push(
+        `${tag} at ${crLabel} are expected to hit harder - consider boosting damage by 25% while keeping hp in check to preserve threat without extending fight length.`
+      );
+    }
+  }
+
+  const resistances = String(snapshot?.resistances ?? "").trim();
+  if (resistances && resistances !== "-") {
+    suggestions.push(
+      "If resistances remain, remove any 'non-magical' wording and consider lowering AC by 1 to offset the durability bump."
+    );
+  }
+
+  const vulnerabilities = String(snapshot?.vulnerabilities ?? "").trim();
+  if (vulnerabilities && vulnerabilities !== "-") {
+    const parts = vulnerabilities.split(",").map((part) => part.trim()).filter(Boolean);
+    if (parts.length > 1) {
+      suggestions.push(
+        "Multiple vulnerabilities make the creature easier to drop - consider raising AC by 1 to compensate."
+      );
+    }
+  }
+
+  if (!suggestions.length) return "";
+
+  return `
+    <div class="m1424-suggestions-title">Suggestions</div>
+    <ul class="m1424-suggestions-list">
+      ${suggestions.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}
+    </ul>
+  `;
+}
+
+function getExpectedHpByCr(crValue) {
+  const hpByCr = [
+    { cr: 0, hp: 3 },
+    { cr: 0.125, hp: 9 },
+    { cr: 0.25, hp: 15 },
+    { cr: 0.5, hp: 24 },
+    { cr: 1, hp: 30 },
+    { cr: 2, hp: 45 },
+    { cr: 3, hp: 60 },
+    { cr: 4, hp: 75 },
+    { cr: 5, hp: 90 },
+    { cr: 6, hp: 105 },
+    { cr: 7, hp: 120 },
+    { cr: 8, hp: 120 },
+    { cr: 9, hp: 135 },
+    { cr: 10, hp: 150 },
+    { cr: 11, hp: 165 },
+    { cr: 12, hp: 180 },
+    { cr: 13, hp: 195 },
+    { cr: 14, hp: 210 },
+    { cr: 15, hp: 225 },
+    { cr: 16, hp: 240 },
+    { cr: 17, hp: 255 },
+    { cr: 18, hp: 270 },
+    { cr: 19, hp: 285 },
+    { cr: 20, hp: 300 },
+    { cr: 21, hp: 315 },
+    { cr: 22, hp: 330 },
+    { cr: 23, hp: 345 },
+    { cr: 24, hp: 360 },
+    { cr: 25, hp: 375 },
+    { cr: 26, hp: 390 }
+  ];
+
+  if (!Number.isFinite(crValue)) return null;
+  if (crValue > 26) {
+    const perCr = 15;
+    return Math.round(390 + (crValue - 26) * perCr);
+  }
+
+  for (const row of hpByCr) {
+    if (crValue === row.cr) return row.hp;
+  }
+  return null;
+}
+
+export function registerPreviewHandlebarsHelpers() {
+  if (!globalThis.Handlebars?.registerHelper) return;
+  if (globalThis.Handlebars.helpers?.formatPreviewCell) return;
+  globalThis.Handlebars.registerHelper("formatPreviewCell", (rowKey, value) => {
+    if (rowKey === "attackSaveRemoved") {
+      return new globalThis.Handlebars.SafeString(buildAttackSaveHtml(value));
+    }
+    const formatted = formatValue(value);
+    return new globalThis.Handlebars.SafeString(globalThis.Handlebars.escapeExpression(formatted));
+  });
+}
 
 class PreviewApp extends HandlebarsApplicationMixin(ApplicationV2) {
   static DEFAULT_OPTIONS = {
@@ -24,29 +200,21 @@ class PreviewApp extends HandlebarsApplicationMixin(ApplicationV2) {
     }
   };
 
-  constructor(title, html, comparison) {
+  constructor(title, previewData, comparison) {
     super();
     this.options.window.title = title;
-    this.previewHtml = html;
+    this.previewData = previewData;
     this.comparison = comparison;
   }
 
   async _prepareContext() {
-    return {
-      content: this.previewHtml
-    };
+    return this.previewData ?? {};
   }
 
   async _onRender(...args) {
     await super._onRender(...args);
     this.attachListeners();
-    const root = this.element?.[0] ?? this.element;
-    if (root) {
-      const needsWidth = root.querySelector(".m1424-attack-save-list");
-      if (needsWidth) {
-        this.setPosition({ width: 1200, height: 720 });
-      }
-    }
+    this.sizeToContent();
   }
 
   attachListeners() {
@@ -422,6 +590,53 @@ class PreviewApp extends HandlebarsApplicationMixin(ApplicationV2) {
       }
     }
   }
+
+  sizeToContent() {
+    const root = this.element?.[0] ?? this.element;
+    if (!root) return;
+    const body = root.querySelector(".m1424-preview-body");
+    const table = root.querySelector(".m1424-compare-table");
+    const scrollWrap = root.querySelector(".m1424-compare-scroll");
+    if (!body || !table) return;
+
+    requestAnimationFrame(() => {
+      const maxWidth = Math.min(1600, Math.floor(window.innerWidth * 0.95));
+      const maxHeight = Math.floor(window.innerHeight * 0.95);
+      const minWidth = 720;
+      const minHeight = 520;
+      const outer = root.getBoundingClientRect();
+      const inner = body.getBoundingClientRect();
+      const chromeWidth = Math.max(0, outer.width - inner.width);
+      const chromeHeight = Math.max(0, outer.height - inner.height);
+      const desiredWidth = Math.min(
+        maxWidth,
+        Math.max(minWidth, table.scrollWidth + chromeWidth + 24)
+      );
+
+      const getBlockHeight = (element) => {
+        if (!element) return 0;
+        const styles = window.getComputedStyle(element);
+        const marginTop = Number.parseFloat(styles.marginTop) || 0;
+        const marginBottom = Number.parseFloat(styles.marginBottom) || 0;
+        return element.getBoundingClientRect().height + marginTop + marginBottom;
+      };
+
+      const role = root.querySelector(".m1424-role");
+      const suggestions = root.querySelector(".m1424-suggestions");
+      const actions = root.querySelector(".m1424-compare-actions");
+      const extrasHeight = getBlockHeight(role) + getBlockHeight(suggestions) + getBlockHeight(actions);
+
+      const scrollContentHeight = body.scrollHeight;
+      const maxScrollHeight = Math.max(200, maxHeight - chromeHeight - 24);
+      const desiredScrollHeight = Math.min(scrollContentHeight, maxScrollHeight);
+      const desiredHeight = Math.min(
+        maxHeight,
+        Math.max(minHeight, desiredScrollHeight + chromeHeight + 24)
+      );
+
+      this.setPosition({ width: desiredWidth, height: desiredHeight });
+    });
+  }
 }
 
 function getDefaultOptions() {
@@ -457,15 +672,19 @@ function getFormData(html) {
   };
 }
 
-function renderPreviewDialog(title, html, comparison) {
+async function renderPreviewDialog(title, previewData, comparison) {
   if (ApplicationV2 && HandlebarsApplicationMixin) {
-    const app = new PreviewApp(title, html, comparison);
+    const app = new PreviewApp(title, previewData, comparison);
     app.render(true);
     return app;
   }
+  const content = await renderTemplate(
+    "modules/monsters-2014-to-2024/templates/preview.hbs",
+    previewData ?? {}
+  );
   new Dialog({
     title,
-    content: html,
+    content,
     buttons: {
       ok: { label: "Close" }
     }
@@ -564,6 +783,7 @@ export async function openActorPreviewComparison(actor) {
 
   
   const base = snapshotFromData(actor.toObject(), actor.getRollData?.() ?? {});
+  const crValue = parseCR(base.cr);
   const acLive = actor?.system?.attributes?.ac?.value;
   if (typeof acLive === "number") {
     base.ac = acLive;
@@ -594,37 +814,7 @@ export async function openActorPreviewComparison(actor) {
     }
   }
 
-  const formatRange = (summary) => {
-    if (!summary) return "-";
-    return summary.min === summary.max ? `${summary.min}` : `${summary.min}-${summary.max}`;
-  };
-  const formatSaves = (saves) => {
-    if (!saves?.length) return "-";
-    return saves.map((s) => `${s.key} ${s.value}`).join(", ");
-  };
-  const formatValue = (value) => {
-    if (value === null || value === undefined || value === "") return "-";
-    if (Array.isArray(value)) return value.join(", ");
-    if (typeof value === "object") {
-      if ("value" in value) return value.value;
-      return JSON.stringify(value);
-    }
-    return value;
-  };
   const isNumber = (value) => typeof value === "number" && !Number.isNaN(value);
-  const buildAttackSaveHtml = (items) => {
-    if (!items?.length) return "-";
-    return `
-      <div class="m1424-attack-save-list">
-        ${items.map((entry) => `
-          <label class="m1424-attack-save-option">
-            <input class="m1424-attack-save-toggle" type="checkbox" data-item-id="${entry.id}" checked />
-            <span class="m1424-attack-save-name">${escapeHtml(entry.name)}</span>
-          </label>
-        `).join("")}
-      </div>
-    `;
-  };
 
   const rows = [
     {
@@ -666,50 +856,50 @@ export async function openActorPreviewComparison(actor) {
     }
   ];
 
-  const header = `<tr><th>Stat</th><th data-mode="original">Original</th>${results.map((result) => `<th data-mode="${result.key}">${result.mode}</th>`).join("")}</tr>`;
-  const body = rows.map((row) => {
-    const baseValue = row.useTargets ? (row.format ? row.format(base) : base[row.key]) : (row.format ? row.format(base) : base[row.key]);
-    const baseCompare = row.compare ? row.compare(base) : null;
-    const cells = results.map((result) => {
-      const after = result.after ?? {};
-      const afterValue = row.useTargets
-        ? result?.targets?.[row.useTargets] ?? (row.format ? row.format(after) : after[row.key])
-        : (row.format ? row.format(after) : after[row.key]);
-      const afterCompare = row.compare ? row.compare(after) : null;
-      let cellClass = "m1424-compare-cell";
-      const numericComparable = isNumber(baseCompare) && isNumber(afterCompare);
-      if (numericComparable && baseCompare !== afterCompare) {
-        cellClass += afterCompare > baseCompare ? " m1424-inc" : " m1424-dec";
-      } else if (!numericComparable && formatValue(baseValue) !== formatValue(afterValue)) {
-        cellClass += " m1424-change";
-      }
-      const cellContent = row.key === "attackSaveRemoved"
-        ? buildAttackSaveHtml(afterValue)
-        : formatValue(afterValue);
-      return `<td class="${cellClass}" data-row="${row.key}" data-mode="${result.key}">${cellContent}</td>`;
-    });
-    const baseContent = row.key === "attackSaveRemoved"
-      ? buildAttackSaveHtml(baseValue)
-      : formatValue(baseValue);
-    return `<tr data-row="${row.key}"><td class="m1424-compare-stat">${row.label}</td><td class="m1424-compare-cell" data-row="${row.key}" data-mode="original">${baseContent}</td>${cells.join("")}</tr>`;
-  }).join("");
+  const previewData = {
+    roleText: roleLines.length ? roleLines.join(" ") : "",
+    suggestionsHtml: buildSuggestionsHtml(actor, base, crValue),
+    headerModes: results.map((result) => ({ key: result.key, label: result.mode })),
+    rows: rows.map((row) => {
+      const baseValue = row.useTargets
+        ? (row.format ? row.format(base) : base[row.key])
+        : (row.format ? row.format(base) : base[row.key]);
+      const baseCompare = row.compare ? row.compare(base) : null;
+      const cells = results.map((result) => {
+        const after = result.after ?? {};
+        const afterValue = row.useTargets
+          ? result?.targets?.[row.useTargets] ?? (row.format ? row.format(after) : after[row.key])
+          : (row.format ? row.format(after) : after[row.key]);
+        const afterCompare = row.compare ? row.compare(after) : null;
+        let cellClass = "m1424-compare-cell";
+        const numericComparable = isNumber(baseCompare) && isNumber(afterCompare);
+        if (numericComparable && baseCompare !== afterCompare) {
+          cellClass += afterCompare > baseCompare ? " m1424-inc" : " m1424-dec";
+        } else if (!numericComparable && formatValue(baseValue) !== formatValue(afterValue)) {
+          cellClass += " m1424-change";
+        }
+        return {
+          modeKey: result.key,
+          className: cellClass,
+          value: afterValue
+        };
+      });
+      return {
+        label: row.label,
+        key: row.key,
+        base: {
+          value: baseValue
+        },
+        cells
+      };
+    })
+  };
 
-  const roleBlock = roleLines.length ? `<p class="m1424-role">${roleLines.join(" ")}</p>` : "";
-  const content = `
-    ${roleBlock}
-    <table class="m1424-compare-table">
-      <thead>${header}</thead>
-      <tbody>${body}</tbody>
-    </table>
-    <div class="m1424-compare-actions">
-      <button type="button" class="m1424-update-selected">Update Monster</button>
-      <button type="button" class="m1424-update-selected-replace">Update and Replace in Scenes</button>
-    </div>
-  `;
-
-  renderPreviewDialog(formatPreviewTitle(actor, `Preview: ${actor.name}`), content, {
+  await renderPreviewDialog(formatPreviewTitle(actor, `Preview: ${actor.name}`), previewData, {
     actorId: actor.id,
     results,
     backupMode: defaults.backupMode
   });
 }
+
+
