@@ -34,8 +34,8 @@ Foundry VTT v13 module for D&D 5e (5.2.4) that scales 2014 monsters to 2024 leve
 
 - Inbuilt Scaling: normalizes PB/AC/HP/attack bonuses/save DCs, skills, and senses based on CR and detected role. Can be configured by user.
 - Match SRD 5.2: replaces the actor with a matching SRD creature from a compendium pack and preserves customizations.
-- Blog of Holding: applies the CR table targets for AC/HP/Attack/Damage/DC/PB with a primary-attack damage adjustment.
-- A5E Monster Design: applies Level Up monster table targets for AC/HP/PB/attacks/DPR with easy or hard DC targets.
+- [Blog of Holding](https://www.blogofholding.com/?p=8469): applies the CR table targets for AC/HP/Attack/Damage/DC/PB with a primary-attack damage adjustment.
+- [A5E Monster Design](https://a5e.tools/rules/designing-monsters): applies Level Up monster table targets for AC/HP/PB/attacks/DPR with easy or hard DC targets.
 
 ## Detected Roles
 
