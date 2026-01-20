@@ -14,7 +14,7 @@ function registerSettings() {
   });
   game.settings.register(MODULE_ID, "backupNameSuffixEnabled", {
     name: "Backup Name Suffix Enabled",
-    hint: "If enabled, append a suffix to backup actor names.",
+    hint: "If enabled, append a suffix to backup actor names (not for compendium/journal backups).",
     scope: "world",
     config: true,
     type: Boolean,
@@ -30,7 +30,7 @@ function registerSettings() {
   });
   game.settings.register(MODULE_ID, "backupDuplicateFolderId", {
     name: "Backup Duplicate Folder ID",
-    hint: "Folder id or UUID for duplicate backups (leave blank to use the actor's current folder).",
+    hint: "Folder id or UUID for actor backups (leave blank to use the actor's current folder).",
     scope: "world",
     config: true,
     type: String,

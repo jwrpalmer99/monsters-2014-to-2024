@@ -827,6 +827,7 @@ export function stripSaveFromAttackActivities(item) {
       updated = updated.replace(new RegExp(protectedToken, "g"), protectedText);
     }
     updated = updated.replace(/must succeed.*?\[\[\/save.*?\]\].*?saving throw/gi, "");
+    updated = updated.replace("  ", " ");
     return updated;
   };
 
