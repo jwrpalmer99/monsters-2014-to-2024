@@ -29,7 +29,7 @@ function buildAttackSaveHtml(items) {
   return `
     <div class="m1424-attack-save-list">
       ${items.map((entry) => `
-        <label class="m1424-attack-save-option">
+        <label class="m1424-attack-save-option"${entry.description ? ` title="${escapeHtml(entry.description)}"` : ""}>
           <input class="m1424-attack-save-toggle" type="checkbox" data-item-id="${entry.id}" checked />
           <span class="m1424-attack-save-name">${escapeHtml(entry.name)}</span>
         </label>

@@ -733,6 +733,62 @@ export function stripSaveFromAttackActivities(item) {
 
   const cleanSaveText = (text) => {
     let updated = text;
+    const saveInfo = (() => {
+      const matchTag = updated.match(/\[\[\/save[^\]]*?\bability\s*=\s*([a-z]+)[^\]]*?\bdc\s*=\s*(\d+)[^\]]*\]\]/i);
+      if (matchTag) return { ability: matchTag[1], dc: matchTag[2], raw: matchTag[0] };
+      const matchAltTag = updated.match(/\[\[\/save\s+([a-zA-Z]+)\s+(\d+)[^\]]*\]\]/i);
+      if (matchAltTag) return { ability: matchAltTag[1], dc: matchAltTag[2], raw: matchAltTag[0] };
+      const matchText = updated.match(/\bDC\s*(\d+)\s*([a-z]+)\s+saving\s+throw\b/i);
+      if (matchText) return { ability: matchText[2], dc: matchText[1], raw: null };
+      return null;
+    })();
+    let protectedToken = "";
+    let protectedText = "";
+    if (saveInfo) {
+      const abilityLabel = saveInfo.ability.toUpperCase();
+      protectedText = saveInfo.raw
+        ? `${saveInfo.raw} saving throw`
+        : `DC ${saveInfo.dc} ${abilityLabel} saving throw`;
+      protectedToken = `__M1424_SAVE_${saveInfo.dc}_${abilityLabel}__`;
+      if (saveInfo.raw) {
+        updated = updated.replace(saveInfo.raw, protectedToken);
+      }
+      if (protectedToken) {
+        const tokenPattern = protectedToken.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        updated = updated.replace(
+          new RegExp(`\\bmust\\s+succeed\\s+on\\s+a\\s+${tokenPattern}\\s+saving\\s+throw\\s+or\\s+take\\b`, "gi"),
+          "takes"
+        );
+        updated = updated.replace(
+          new RegExp(`\\bmust\\s+succeed\\s+on\\s+a\\s+${tokenPattern}\\s+saving\\s+throw\\s+or\\s+become\\b`, "gi"),
+          "becomes"
+        );
+        updated = updated.replace(
+          new RegExp(`\\bmust\\s+succeed\\s+on\\s+a\\s+${tokenPattern}\\s+saving\\s+throw\\b`, "gi"),
+          ""
+        );
+      }
+      updated = updated.replace(
+        /\brepeat\s+(?:the\s+)?saving\s+throw\b/gi,
+        `make a ${protectedToken || protectedText}`
+      );
+      updated = updated.replace(
+        /\brepeat\s+(?:the\s+)?save\b/gi,
+        `make a ${protectedToken || protectedText}`
+      );
+      updated = updated.replace(
+        /\bmake\s+(?:a\s+)?saving\s+throw\b/gi,
+        `make a ${protectedToken || protectedText}`
+      );
+      updated = updated.replace(
+        /\bmake\s+(?:a\s+)?save\b/gi,
+        `make a ${protectedToken || protectedText}`
+      );
+      updated = updated.replace(
+        new RegExp(`DC\\s*${saveInfo.dc}\\s*${abilityLabel}\\s+saving\\s+throw`, "gi"),
+        protectedToken
+      );
+    }
     updated = updated.replace(
       /\bmust\s+succeed\s+on\s+a\s+\[\[\/save[^\]]+\]\]\s+or\s+become\b/gi,
       "becomes"
@@ -745,9 +801,18 @@ export function stripSaveFromAttackActivities(item) {
     updated = updated.replace(/\bDC\s*\d+\b/gi, "");
     updated = updated.replace(/\b(?:strength|dexterity|constitution|intelligence|wisdom|charisma)\s+saving\s+throw\b/gi, "");
     updated = updated.replace(/\b(?:str|dex|con|int|wis|cha)\s+saving\s+throw\b/gi, "");
+    updated = updated.replace(
+      /\bmust\s+succeed\s+on\s+a\s+saving\s+throw\s+or\s+take\b/gi,
+      "takes"
+    );
+    updated = updated.replace(/\bmust\s+succeed\s+on\s+a\s+saving\s+throw\b/gi, "");
     updated = updated.replace(/\bmust\s+succeed\s+on\s+a\s+becomes\b/gi, "becomes");
     updated = updated.replace(/\bor\s+become\b/gi, "becomes");
+    updated = updated.replace(/\bsaving\s+throw\s+saving\s+throw\b/gi, "saving throw");
     updated = updated.replace(/\s{2,}/g, " ").replace(/\s+([.,;:])/g, "$1").trim();
+    if (protectedToken && protectedText) {
+      updated = updated.replace(new RegExp(protectedToken, "g"), protectedText);
+    }
     return updated;
   };
 
@@ -792,11 +857,13 @@ export function listAttackSaveItems(actor) {
         || foundry.utils.hasProperty(activity, "save.dc")
         || foundry.utils.hasProperty(activity, "save.formula");
       if (hasSave && (hasAttack || hasAttackActivity)) {
-        items.set(item.id, item.name || item.id);
+        const desc = String(foundry.utils.getProperty(item, "system.description.value") || "");
+        const cleaned = desc.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+        items.set(item.id, { name: item.name || item.id, description: cleaned });
       }
     }
   }
-  return Array.from(items, ([id, name]) => ({ id, name }));
+  return Array.from(items, ([id, data]) => ({ id, name: data.name, description: data.description }));
 }
 
 export function applyAttackBaseline(item, targetBonus, floorOnly) {

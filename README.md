@@ -102,7 +102,7 @@ game.modules.get("monsters-2014-to-2024").api.convertActorTo2024(actor, {
 ## Attack + Save Cleanup
 
 - Option: **Remove Save on Attack Abilities** (default: on).
-- When enabled, if an ability uses an attack roll and a saving throw, the save is removed and descriptions are cleaned.
+- When enabled, if an ability uses an attack roll and a saving throw, the (initial) save is removed and descriptions are cleaned. 
 - In the preview window this functionality can be disabled/enabled for each ability.
 
 ## What It Adjusts
