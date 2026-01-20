@@ -4,7 +4,13 @@
       <th>Stat</th>
       <th data-mode="original">Original</th>
       {{#each headerModes}}
-        <th data-mode="{{key}}">{{label}}</th>
+        <th data-mode="{{key}}">
+          {{#if link}}
+            <a href="{{link}}" target="_blank" rel="noopener noreferrer">{{label}}</a>
+          {{else}}
+            {{label}}
+          {{/if}}
+        </th>
       {{/each}}
     </tr>
   </thead>

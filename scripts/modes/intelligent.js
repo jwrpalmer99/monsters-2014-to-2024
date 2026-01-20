@@ -1,7 +1,7 @@
 import {
   buildInitiativeUpdate,
   calculateProfFromCR,
-  detectRole,
+  detectRoleDetails,
   ensureMultiattack,
   getExpectedAttacksByCR,
   getAbilityMod,
@@ -25,7 +25,8 @@ import {
 
 export function buildIntelligentPlan(actor, options = {}) {
   const actorData = actor.toObject();
-  const role = detectRole(actor);
+  const roleInfo = detectRoleDetails(actor);
+  const role = roleInfo.role;
   const cr = inferCR(actor);
   const abilities = getActorAbilities(actorData);
   const targetProf = calculateProfFromCR(cr);
@@ -94,6 +95,7 @@ export function buildIntelligentPlan(actor, options = {}) {
     itemCreates,
     cr,
     role,
+    roleReasons: roleInfo.reasons,
     attackSaveRemoved,
     targets: {
       attack: attackBaseline,

@@ -812,7 +812,9 @@ export async function openActorPreviewComparison(actor) {
       plan: preview?.plan
     });
     if (mode.key === "inbuilt" && preview?.after?.detectedRole) {
-      roleLines.push(`Detected Role: ${preview.after.detectedRole}`);
+      const rawRole = String(preview.after.detectedRole || "");
+      const displayRole = rawRole ? `${rawRole.charAt(0).toUpperCase()}${rawRole.slice(1)}` : rawRole;
+      roleLines.push(`Detected Role: ${displayRole}`);
     }
   }
   const sourceText = (() => {
@@ -871,9 +873,25 @@ export async function openActorPreviewComparison(actor) {
 
   const previewData = {
     roleText: roleLines.length ? roleLines.join(" ") : "",
+    roleTooltip: Array.isArray(results.find((result) => result.key === "inbuilt")?.plan?.roleReasons)
+      ? results.find((result) => result.key === "inbuilt").plan.roleReasons.join(" ")
+      : "",
     sourceText,
     suggestionsHtml: buildSuggestionsHtml(actor, base, crValue),
-    headerModes: results.map((result) => ({ key: result.key, label: result.mode })),
+    headerModes: results.map((result) => {
+      const link = (() => {
+        if (result.key === "blog") return "https://www.blogofholding.com/?p=8469";
+        if (result.key === "a5e-easy" || result.key === "a5e-hard") {
+          return "https://a5e.tools/rules/designing-monsters";
+        }
+        return "";
+      })();
+      return {
+        key: result.key,
+        label: result.mode,
+        link
+      };
+    }),
     rows: rows.map((row) => {
       const baseValue = row.useTargets
         ? (row.format ? row.format(base) : base[row.key])

@@ -150,6 +150,11 @@ const ROLE_DAMAGE_MULTIPLIER = {
   skirmisher: 1.0,
   caster: 0.9,
   controller: 1.0,
+  solo: 1.05,
+  artillery: 1.05,
+  defender: 0.95,
+  support: 0.95,
+  ambusher: 1.1,
   balanced: 1.0
 };
 
@@ -158,6 +163,11 @@ const ROLE_HP_MULTIPLIER = {
   skirmisher: 1.0,
   caster: 0.9,
   controller: 1.0,
+  solo: 1.15,
+  artillery: 0.9,
+  defender: 1.25,
+  support: 1.05,
+  ambusher: 0.95,
   balanced: 1.0
 };
 
@@ -174,6 +184,34 @@ const CONDITION_KEYWORDS = [
   "blinded",
   "deafened",
   "petrified"
+];
+
+const SUPPORT_KEYWORDS = [
+  "heal",
+  "healing",
+  "restore",
+  "regain",
+  "revive",
+  "resurrect",
+  "temporary hit points",
+  "temp hp",
+  "ally",
+  "allies",
+  "aura",
+  "bless",
+  "cure"
+];
+
+const AMBUSHER_KEYWORDS = [
+  "invisible",
+  "invisibility",
+  "stealth",
+  "hide",
+  "hidden",
+  "ambush",
+  "surprise",
+  "shadow",
+  "burrow"
 ];
 
 export function clamp(value, min, max) {
@@ -299,7 +337,7 @@ export function getHighestMentalMod(abilities) {
   return Math.max(...mods);
 }
 
-export function detectRole(actor) {
+export function detectRoleDetails(actor) {
   const abilities = getActorAbilities(actor);
   const strMod = getAbilityMod(abilities, "str");
   const dexMod = getAbilityMod(abilities, "dex");
@@ -309,6 +347,11 @@ export function detectRole(actor) {
   let meleeCount = 0;
   let rangedCount = 0;
   let conditionCount = 0;
+  let supportCount = 0;
+  let ambusherCount = 0;
+  const supportHits = new Set();
+  const ambusherHits = new Set();
+  const conditionHits = new Set();
 
   for (const item of actor.items) {
     const actionType = foundry.utils.getProperty(item, "system.actionType");
@@ -317,17 +360,95 @@ export function detectRole(actor) {
     const description = String(foundry.utils.getProperty(item, "system.description.value") || "").toLowerCase();
     if (CONDITION_KEYWORDS.some((keyword) => description.includes(keyword))) {
       conditionCount += 1;
+      for (const keyword of CONDITION_KEYWORDS) {
+        if (description.includes(keyword)) conditionHits.add(keyword);
+      }
+    }
+    if (SUPPORT_KEYWORDS.some((keyword) => description.includes(keyword))) {
+      supportCount += 1;
+      for (const keyword of SUPPORT_KEYWORDS) {
+        if (description.includes(keyword)) supportHits.add(keyword);
+      }
+    }
+    if (AMBUSHER_KEYWORDS.some((keyword) => description.includes(keyword))) {
+      ambusherCount += 1;
+      for (const keyword of AMBUSHER_KEYWORDS) {
+        if (description.includes(keyword)) ambusherHits.add(keyword);
+      }
     }
   }
 
-  if (hasSpells || saves.length >= 2) {
-    if (conditionCount >= 2) return "controller";
-    return "caster";
+  const acValue = (() => {
+    const raw = foundry.utils.getProperty(actor, "system.attributes.ac.value")
+      ?? foundry.utils.getProperty(actor, "system.attributes.ac");
+    if (typeof raw === "number") return raw;
+    if (typeof raw === "string") {
+      const parsed = Number(raw);
+      if (!Number.isNaN(parsed)) return parsed;
+    }
+    if (raw && typeof raw === "object") {
+      const maybe = raw.value ?? raw.total ?? raw.base ?? raw.flat;
+      if (typeof maybe === "number") return maybe;
+    }
+    return null;
+  })();
+
+  const reasons = [];
+
+  if (isLegendary(actor)) {
+    reasons.push("Legendary resources detected.");
+    return { role: "solo", reasons };
   }
-  if (strMod >= dexMod && meleeCount >= rangedCount) return "brute";
-  if (dexMod >= strMod && rangedCount >= meleeCount) return "skirmisher";
-  if (conditionCount >= 2) return "controller";
-  return "balanced";
+  if (supportCount >= 2) {
+    const hits = Array.from(supportHits).sort().join(", ");
+    reasons.push(`Support/healing traits detected (${hits || "no keywords"}).`);
+    return { role: "support", reasons };
+  }
+  if (hasSpells || saves.length >= 2) {
+    reasons.push(hasSpells ? "Spellcasting detected." : "Multiple saving throw abilities detected.");
+    if (conditionCount >= 2) {
+      const hits = Array.from(conditionHits).sort().join(", ");
+      reasons.push(`Control conditions detected (${hits || "no keywords"}).`);
+      return { role: "controller", reasons };
+    }
+    return { role: "caster", reasons };
+  }
+  if (rangedCount >= meleeCount + 2) {
+    reasons.push("Heavy ranged focus detected.");
+    return { role: "artillery", reasons };
+  }
+  if (ambusherCount >= 2 || (dexMod > strMod && meleeCount > 0 && rangedCount === 0)) {
+    if (ambusherCount >= 2) {
+      const hits = Array.from(ambusherHits).sort().join(", ");
+      reasons.push(`Ambusher keywords detected (${hits || "no keywords"}).`);
+    } else {
+      reasons.push("Dex-focused melee profile detected.");
+    }
+    return { role: "ambusher", reasons };
+  }
+  if ((acValue !== null && acValue >= 18) || (meleeCount >= rangedCount + 1 && strMod >= dexMod)) {
+    reasons.push(acValue !== null && acValue >= 18 ? "High AC detected." : "Melee-focused strength profile detected.");
+    return { role: "defender", reasons };
+  }
+  if (strMod >= dexMod && meleeCount >= rangedCount) {
+    reasons.push("Strength-focused melee profile detected.");
+    return { role: "brute", reasons };
+  }
+  if (dexMod >= strMod && rangedCount >= meleeCount) {
+    reasons.push("Dex-focused ranged profile detected.");
+    return { role: "skirmisher", reasons };
+  }
+  if (conditionCount >= 2) {
+    const hits = Array.from(conditionHits).sort().join(", ");
+    reasons.push(`Control conditions detected (${hits || "no keywords"}).`);
+    return { role: "controller", reasons };
+  }
+  reasons.push("No strong role indicators detected.");
+  return { role: "balanced", reasons };
+}
+
+export function detectRole(actor) {
+  return detectRoleDetails(actor).role;
 }
 
 export function inferCR(actor) {
@@ -849,9 +970,9 @@ export function ensureMultiattack(actor, count, template) {
   }
   if (template) {
     const created = foundry.utils.duplicate(template);
-    if (created?.system?.description?.value) {
-      created.system.description.value = updateMultiattackDescription(created.system.description.value, count);
-    }
+    const fallback = buildMultiattackData(count);
+    if (!created?.system) created.system = {};
+    created.system.description = fallback.system.description;
     return { update: null, create: created };
   }
   return { update: null, create: buildMultiattackData(count) };

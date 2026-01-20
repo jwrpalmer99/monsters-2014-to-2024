@@ -15,6 +15,33 @@ Foundry VTT v13 module for D&D 5e (5.2.4) that converts 2014 NPC stat blocks to 
 - Blog of Holding: applies the CR table targets for AC/HP/Attack/Damage/DC/PB with a primary-attack damage adjustment.
 - A5E Monster Design: applies Level Up monster table targets for AC/HP/PB/attacks/DPR with easy or hard DC targets.
 
+## Detected Roles
+
+Inbuilt scaling assigns a role to each creature and uses it to tune HP and damage multipliers:
+
+- Solo (legendary bosses)
+- Support (healing/support traits)
+- Controller (multiple control effects)
+- Caster (has spells, but not Support/Controller)
+- Artillery (ranged-heavy)
+- Ambusher (stealth/ambush traits or dex-focused melee)
+- Defender (high AC or melee-focused)
+- Brute (strength-focused melee)
+- Skirmisher (dex-focused ranged)
+- Balanced (fallback)
+
+The preview UI shows the detected role with a tooltip explaining why it was chosen.
+
+## Preview Suggestions
+
+The preview window includes a suggestions panel with balance notes such as:
+
+- HP vs expected CR averages (raise/lower damage accordingly)
+- Legendary/dragon pacing guidance
+- Action economy notes (multiattack/bonus action/reaction)
+- Save DC spread consistency
+- Resistance/vulnerability adjustments
+
 ## API Options
 
 `convertActorTo2024(actor, options)` and `previewActorConversion(actor, options)` accept:

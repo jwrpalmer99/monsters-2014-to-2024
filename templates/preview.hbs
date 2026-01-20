@@ -1,6 +1,6 @@
 <div class="m1424-preview-body">
   {{#if roleText}}
-    <p class="m1424-role">
+    <p class="m1424-role"{{#if roleTooltip}} title="{{roleTooltip}}"{{/if}}>
       {{roleText}}
       {{#if sourceText}} | Source: {{sourceText}}{{/if}}
     </p>
