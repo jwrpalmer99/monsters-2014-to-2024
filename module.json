@@ -1,15 +1,15 @@
 {
   "id": "monsters-2014-to-2024",
   "title": "Monsters 2014 to 2024",
-  "description": "Convert D&D 5e (2014) monsters to 2024-style stat blocks with scaled AC/HP/attacks/proficiency and related bonuses.",
-  "version": "0.1.0",
+  "description": "Scale D&D 5e (5.2.4) 2014 monsters to 2024 levels. Provides several methods of scaling and backup methods for original actors.",
+  "version": "#{VERSION}#",
   "compatibility": {
     "minimum": "13",
     "verified": "13"
   },
   "authors": [
     {
-      "name": "Jeremy"
+      "name": "PinguTwo"
     }
   ],
   "esmodules": [
@@ -18,6 +18,9 @@
   "styles": [
     "styles/module.css"
   ],
+  "url": "#{URL}#",
+  "manifest": "#{MANIFEST}#",
+  "download": "#{DOWNLOAD}#",
   "relationships": {
     "systems": [
       {
