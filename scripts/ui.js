@@ -798,7 +798,14 @@ async function createBackup(actor, backupMode) {
     const suffixEnabled = game.settings.get(MODULE_ID, "backupNameSuffixEnabled");
     const suffix = String(game.settings.get(MODULE_ID, "backupNameSuffix") ?? "");
     const name = suffixEnabled && suffix ? `${actor.name}${suffix}` : `${actor.name}`;
-    await actor.collection.documentClass.create({ ...actorData, name });
+    const folderSetting = String(game.settings.get(MODULE_ID, "backupDuplicateFolderId") ?? "").trim();
+    let folderId = actor.folder?.id ?? null;
+    if (folderSetting) {
+      const resolved = await fromUuid(folderSetting).catch(() => null);
+      const folder = resolved?.documentName === "Folder" ? resolved : game.folders.get(folderSetting);
+      folderId = folder?.id ?? folderId;
+    }
+    await actor.collection.documentClass.create({ ...actorData, name, folder: folderId ?? undefined });
     return;
   }
   if (backupMode === "journal") {

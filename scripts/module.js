@@ -12,6 +12,30 @@ function registerSettings() {
     type: String,
     default: "dnd-monster-manual.actors"
   });
+  game.settings.register(MODULE_ID, "backupNameSuffixEnabled", {
+    name: "Backup Name Suffix Enabled",
+    hint: "If enabled, append a suffix to backup actor names.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true
+  });
+  game.settings.register(MODULE_ID, "backupNameSuffix", {
+    name: "Backup Name Suffix",
+    hint: "Suffix to append to backup actor names when enabled.",
+    scope: "world",
+    config: true,
+    type: String,
+    default: " (2014 backup)"
+  });
+  game.settings.register(MODULE_ID, "backupDuplicateFolderId", {
+    name: "Backup Duplicate Folder ID",
+    hint: "Folder id or UUID for duplicate backups (leave blank to use the actor's current folder).",
+    scope: "world",
+    config: true,
+    type: String,
+    default: ""
+  });
   game.settings.register(MODULE_ID, "backupMode", {
     name: "Backup Mode",
     hint: "Choose how to back up a creature before converting.",
@@ -33,22 +57,6 @@ function registerSettings() {
     config: true,
     type: String,
     default: ""
-  });
-  game.settings.register(MODULE_ID, "backupNameSuffixEnabled", {
-    name: "Backup Name Suffix Enabled",
-    hint: "If enabled, append a suffix to backup actor names.",
-    scope: "world",
-    config: true,
-    type: Boolean,
-    default: true
-  });
-  game.settings.register(MODULE_ID, "backupNameSuffix", {
-    name: "Backup Name Suffix",
-    hint: "Suffix to append to backup actor names when enabled.",
-    scope: "world",
-    config: true,
-    type: String,
-    default: " (2014 backup)"
   });
   game.settings.register(MODULE_ID, "backupJournalId", {
     name: "Backup Journal ID",
